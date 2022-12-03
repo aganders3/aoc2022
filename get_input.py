@@ -13,9 +13,7 @@ if __name__ == "__main__":
 
     request = urllib.request.Request(
         input_url,
-        headers={
-            "Cookie": f"session={SESSION_COOKIE}"
-        },
+        headers={"Cookie": f"session={SESSION_COOKIE}"},
     )
 
     with urllib.request.urlopen(request) as resp:

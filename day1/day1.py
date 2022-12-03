@@ -1,5 +1,5 @@
 # part 1
-max_index = max_cals = 0 
+max_index = max_cals = 0
 elves = [0]
 for line in open("input.txt"):
     l = line.strip()
