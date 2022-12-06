@@ -3,13 +3,11 @@ use std::collections::HashSet;
 fn find_marker(input: &str, marker_len: usize) -> usize {
     let mut unique = HashSet::new();
     marker_len
-        + input
-            .chars()
-            .collect::<Vec<_>>()
+        + input.as_bytes()
             .windows(marker_len)
             .take_while(|x| {
                 unique.clear();
-                !x.into_iter().all(|y| unique.insert(y))
+                !x.iter().all(|y| unique.insert(y))
             })
             .count()
 }
