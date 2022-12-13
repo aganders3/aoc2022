@@ -34,8 +34,8 @@ class Rope:
             )
         elif 2 in (abs(dx), abs(dy)):
             self.tail = (
-                self.tail[0] + int(copysign(max(1, abs(dx) // 2), dx)),
-                self.tail[1] + int(copysign(max(1, abs(dy) // 2), dy)),
+                self.tail[0] + int(copysign(1, dx)),
+                self.tail[1] + int(copysign(1, dy)),
             )
 
         self.visited_by_tail.add(self.tail)
@@ -68,8 +68,8 @@ class LongRope:
 
     def _move_tail(self) -> None:
         for i, knot in enumerate(self.knots[1:], start=1):
-            dx = self.knots[i - 1][0] - self.knots[i][0]
-            dy = self.knots[i - 1][1] - self.knots[i][1]
+            dx = self.knots[i - 1][0] - knot[0]
+            dy = self.knots[i - 1][1] - knot[1]
 
             if 0 in (dx, dy):
                 self.knots[i] = (
