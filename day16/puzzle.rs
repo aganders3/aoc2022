@@ -142,46 +142,27 @@ fn part_1(valve_map: ValveMap) -> i32 {
             .pop()
             .expect("queue should not be empty we just checked it");
         best = best.max(cur.flow_so_far);
-        // prune
+        // naïve prune: if cur.time_remaining <= 0 { continue };
+        // smart prune
         let current_upper_bound = cur.upper_bound(&valve_map);
         if best >= current_upper_bound {
             continue;
         }
-        // dbg!(best, &to_explore.len());
 
-        if cur.closed_valves.contains(&cur.cur) {
-            // open valve
-            // subtract time
-            // add points
-            // push onto to_explore
+        // for each closed valve
+        // move, subtract time, push onto to_explore
+        cur.closed_valves.iter().for_each(|valve| {
+            let time_remaining = cur.time_remaining - valve_map.1.get(&(cur.cur.clone() , valve.to_string())).unwrap();
+            let flow_so_far = cur.flow_so_far + time_remaining * valve_map.0.get(valve).unwrap().0;
             let mut closed_valves = cur.closed_valves.clone();
-            closed_valves.remove(&cur.cur);
-            let time_remaining = cur.time_remaining - 1;
-            let flow_so_far =
-                cur.flow_so_far + time_remaining * valve_map.0.get(&cur.cur).unwrap().0;
+            closed_valves.remove(valve);
             to_explore.push(ValveState {
                 flow_so_far,
                 time_remaining,
-                cur: cur.cur.clone(),
+                cur: valve.clone(),
                 closed_valves,
             });
-        }
-        // for each neighbor
-        // move, subtract time, push onto to_explore
-        valve_map
-            .0
-            .get(&cur.cur)
-            .unwrap()
-            .1
-            .iter()
-            .for_each(|neighbor| {
-                to_explore.push(ValveState {
-                    flow_so_far: cur.flow_so_far,
-                    time_remaining: cur.time_remaining - 1,
-                    cur: neighbor.clone(),
-                    closed_valves: cur.closed_valves.clone(),
-                });
-            });
+        });
     }
 
     dbg!(best)
