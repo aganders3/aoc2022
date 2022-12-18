@@ -1,5 +1,5 @@
-use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
+use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
 use std::iter::FromIterator;
 use std::str;
 
@@ -20,15 +20,18 @@ impl Valve {
     }
 }
 
-// map of valve: (flow, [connected valves])
-// there's probably a way to use &str for the connected valves, but...
+// maps of:
+//     1) valve: (flow, [connected valves])
+//     2) (valve1, valve2): cost to move from valve1 and open valve2
+// lots of allocation and cloning because lifetimes in hashmaps are hard
 #[derive(Debug)]
-struct ValveMap(HashMap<String, (i32, Vec<String>)>, HashMap<(String, String), i32>);
+struct ValveMap(
+    HashMap<String, (i32, Vec<String>)>,
+    HashMap<(String, String), i32>,
+);
 
 impl ValveMap {
     fn parse(s: &str) -> Self {
-        // let mut valve_map = ValveMap(
-
         let valve_map = HashMap::from_iter(s.lines().map(|line| {
             let (valve, tunnels) = line.split_once(';').expect("bad input");
             let valve = Valve::parse(valve);
@@ -43,10 +46,11 @@ impl ValveMap {
             (valve.name.clone(), (valve.flow, tunnels))
         }));
 
+        // this is a bit gnarly but it works
         let mut cost_to_open: HashMap<(String, String), i32> = HashMap::new();
-        for (a, (ai, tunnels)) in valve_map.iter() {
+        for (a, (_ai, tunnels)) in valve_map.iter() {
             // if *ai == 0 { continue; }
-            for (b, (bi, _)) in valve_map.iter() {
+            for (b, (_bi, _)) in valve_map.iter() {
                 // if *bi == 0 { continue; }
                 let mut q = VecDeque::from_iter(tunnels.iter().map(|name| (2, name)));
                 q.push_front((1, a));
@@ -66,13 +70,10 @@ impl ValveMap {
                 }
             }
         }
-        dbg!(&cost_to_open);
 
         ValveMap(valve_map, cost_to_open)
     }
 }
-
-// TODO: symmetric map of (a, b), (b, a): distance for all non-zero valves
 
 #[derive(Debug)]
 struct ValveState {
@@ -107,12 +108,17 @@ impl ValveState {
         // sum of:
         // (time_remaining - time_to_open) * flow
         // for each valve in closed_valves
-        // TODO: does not include time_to_open -- see above for missing info
         self.flow_so_far
             + self
                 .closed_valves
                 .iter()
-                .map(|name| map.0.get(name).unwrap().0 * 0.max(self.time_remaining - map.1.get(&(name.clone(), self.cur.clone())).unwrap()))
+                .map(|name| {
+                    map.0.get(name).unwrap().0
+                        * 0.max(
+                            self.time_remaining
+                                - map.1.get(&(name.clone(), self.cur.clone())).unwrap(),
+                        )
+                })
                 // .map(|name| map.0.get(name).unwrap().0 * (self.time_remaining - 1))
                 .sum::<i32>()
     }
@@ -135,7 +141,7 @@ fn part_1(valve_map: ValveMap) -> i32 {
             }
         })),
     });
-    dbg!(&to_explore);
+    // dbg!(&to_explore);
 
     while !to_explore.is_empty() {
         let cur = to_explore
@@ -152,7 +158,11 @@ fn part_1(valve_map: ValveMap) -> i32 {
         // for each closed valve
         // move, subtract time, push onto to_explore
         cur.closed_valves.iter().for_each(|valve| {
-            let time_remaining = cur.time_remaining - valve_map.1.get(&(cur.cur.clone() , valve.to_string())).unwrap();
+            let time_remaining = cur.time_remaining
+                - valve_map
+                    .1
+                    .get(&(cur.cur.clone(), valve.to_string()))
+                    .unwrap();
             let flow_so_far = cur.flow_so_far + time_remaining * valve_map.0.get(valve).unwrap().0;
             let mut closed_valves = cur.closed_valves.clone();
             closed_valves.remove(valve);
