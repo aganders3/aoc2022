@@ -127,7 +127,6 @@ impl ValveState {
 fn part_1(valve_map: ValveMap) -> i32 {
     let mut best = 0;
     // initial state
-    // TODO: use a BinaryHeap (may require Ord on ValveState)
     let mut to_explore = BinaryHeap::<ValveState>::new();
     to_explore.push(ValveState {
         flow_so_far: 0,
@@ -178,11 +177,103 @@ fn part_1(valve_map: ValveMap) -> i32 {
     dbg!(best)
 }
 
+fn part_2(valve_map: ValveMap) -> i32 {
+    let mut best = 0;
+    // initial state
+    let mut to_explore = BinaryHeap::<(ValveState, ValveState)>::new();
+    let closed_valves = HashSet::from_iter(valve_map.0.iter().filter_map(|(name, (flow, _))| {
+        if *flow > 0 {
+            Some(name.clone())
+        } else {
+            None
+        }
+    }));
+    to_explore.push((
+        ValveState {
+            flow_so_far: 0,
+            time_remaining: 26,
+            cur: "AA".to_string(),
+            closed_valves: closed_valves.clone(),
+        },
+        ValveState {
+            flow_so_far: 0,
+            time_remaining: 26,
+            cur: "AA".to_string(),
+            closed_valves: closed_valves.clone(),
+        },
+    ));
+
+    while !to_explore.is_empty() {
+        let (me, elephant) = to_explore
+            .pop()
+            .expect("queue should not be empty we just checked it");
+        best = best.max(me.flow_so_far + elephant.flow_so_far);
+        // naïve prune: if cur.time_remaining <= 0 { continue };
+        // smart prune
+        let current_upper_bound = me.upper_bound(&valve_map) + elephant.upper_bound(&valve_map);
+        if best >= current_upper_bound {
+            continue;
+        }
+
+        // for each closed valve
+        // move, subtract time, push onto to_explore
+        for v1 in &me.closed_valves {
+            for v2 in &me.closed_valves {
+                if v1 == v2 {
+                    continue;
+                }
+                let mut closed_valves = me.closed_valves.clone();
+                closed_valves.remove(v1);
+                closed_valves.remove(v2);
+
+                let me_time_remaining = 0.max(
+                    me.time_remaining - valve_map.1.get(&(me.cur.clone(), v1.to_string())).unwrap(),
+                );
+                let me_flow_so_far =
+                    me.flow_so_far + me_time_remaining * valve_map.0.get(v1).unwrap().0;
+                let me_next = ValveState {
+                    flow_so_far: me_flow_so_far,
+                    time_remaining: me_time_remaining,
+                    cur: v1.clone(),
+                    closed_valves: closed_valves.clone(),
+                };
+
+                let elephant_time_remaining = 0.max(
+                    elephant.time_remaining
+                        - valve_map
+                            .1
+                            .get(&(elephant.cur.clone(), v2.to_string()))
+                            .unwrap(),
+                );
+                let elephant_flow_so_far =
+                    elephant.flow_so_far + elephant_time_remaining * valve_map.0.get(v2).unwrap().0;
+                let elephant_next = ValveState {
+                    flow_so_far: elephant_flow_so_far,
+                    time_remaining: elephant_time_remaining,
+                    cur: v2.clone(),
+                    closed_valves: closed_valves.clone(),
+                };
+
+                to_explore.push((me_next, elephant_next));
+            }
+        }
+    }
+
+    dbg!(best)
+}
+
 fn main() {
     let valve_map = ValveMap::parse(include_str!("test.input.txt"));
     assert!(part_1(valve_map) == 1651);
     println!(
         "Part 1: {}",
         part_1(ValveMap::parse(include_str!("input.txt")))
+    );
+
+    let valve_map = ValveMap::parse(include_str!("test.input.txt"));
+    assert!(part_2(valve_map) == 1707);
+    println!(
+        "Part 2: {}",
+        part_2(ValveMap::parse(include_str!("input.txt")))
     );
 }
