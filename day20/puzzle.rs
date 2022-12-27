@@ -37,7 +37,7 @@ impl LL {
                 (0..n).fold(old_prev, |acc, _v| {
                     self.map.get(&acc).expect("can't chase rev").0
                 })
-            },
+            }
             n if n > 0 => {
                 let n = (n - 1) % (self.len as isize - 1);
                 (0..n).fold(old_next, |acc, _v| {
