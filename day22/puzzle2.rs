@@ -22,22 +22,22 @@ impl Loc {
     fn from_input_space(n: usize, i: usize, j: usize) -> Loc {
         // match syntax abuse?
         let face = match i {
-            x if (0..n).contains(&x) => Face::One,
-            x if (n..2*n).contains(&x) => {
+            x if (0..n).contains(&x) => {
                 match j {
-                    y if (0..n).contains(&y) => Face::Two,
-                    y if (n..2*n).contains(&y) => Face::Three,
-                    y if (2*n..3*n).contains(&y) => Face::Four,
+                    y if (n..2*n).contains(&y) => Face::One,
+                    y if (2*n..3*n).contains(&y) => Face::Two,
                     _ => unreachable!(),
                 }
             },
+            x if (n..2*n).contains(&x) => Face::Three,
             x if (2*n..3*n).contains(&x) => {
                 match j {
-                    y if (2*n..3*n).contains(&y) => Face::Five,
-                    y if (3*n..4*n).contains(&y) => Face::Six,
+                    y if (0..n).contains(&y) => Face::Four,
+                    y if (n..2*n).contains(&y) => Face::Five,
                     _ => unreachable!(),
                 }
             },
+            x if (3*n..4*n).contains(&x) => Face::Six,
             _ => unreachable!(),
         };
         Loc { face, row: (i % n) as isize, col: (j % n) as isize }
@@ -45,12 +45,12 @@ impl Loc {
 
     fn to_input_space(&self, n: isize) -> (isize, isize) {
         match self.face {
-            Face::One => (self.row, 2*n + self.col),
-            Face::Two => (n + self.row, self.col),
+            Face::One => (self.row, n + self.col),
+            Face::Two => (self.row, 2*n + self.col),
             Face::Three => (n + self.row, n + self.col),
-            Face::Four => (n + self.row, 2*n + self.col),
-            Face::Five => (2*n + self.row, 2*n + self.col),
-            Face::Six => (2*n + self.row, 3*n + self.col),
+            Face::Four => (2*n + self.row, self.col),
+            Face::Five => (2*n + self.row, n + self.col),
+            Face::Six => (3*n + self.row, self.col),
         }
     }
 }
@@ -144,7 +144,6 @@ impl<'a> PC<'a> {
         self.wrap_loc(next)
     }
 
-    // nooo - this only works for the sample input :(
     fn wrap_loc(&self, loc: Loc) -> (Loc, Dir) {
         let n = self.map.n;
         if (0..n).contains(&loc.row) && (0..n).contains(&loc.col) { return (loc, self.dir) }
@@ -154,38 +153,38 @@ impl<'a> PC<'a> {
             match loc.face {
                 Face::One => {
                     (
-                        Loc { face: Face::Six, row: loc.row, col: n - 1},
-                        Dir::Left,
+                        Loc { face: Face::Two, row: loc.row, col: 0},
+                        Dir::Right,
                     )
                 },
                 Face::Two => {
                     (
-                        Loc { face: Face::Three, row: loc.row, col: 0 },
-                        Dir::Right,
+                        Loc { face: Face::Five, row: n - 1 - loc.row, col: n - 1 },
+                        Dir::Left,
                     )
                 },
                 Face::Three => {
                     (
-                        Loc { face: Face::Four, row: loc.row, col: 0 },
-                        Dir::Right,
+                        Loc { face: Face::Two, row: n - 1, col: loc.row },
+                        Dir::Up,
                     )
                 },
                 Face::Four => {
                     (
-                        Loc { face: Face::Six, row: 0, col: n - 1 - loc.row },
-                        Dir::Down,
+                        Loc { face: Face::Five, row: loc.row, col: 0 },
+                        Dir::Right,
                     )
                 },
                 Face::Five => {
                     (
-                        Loc { face: Face::Six, row: loc.row, col: 0 },
-                        Dir::Right,
+                        Loc { face: Face::Two, row: n - 1 - loc.row, col: n - 1 },
+                        Dir::Left,
                     )
                 },
                 Face::Six => {
                     (
-                        Loc { face: Face::One, row: loc.row, col: n - 1 },
-                        Dir::Left,
+                        Loc { face: Face::Five, row: n - 1, col: loc.row },
+                        Dir::Up,
                     )
                 },
             }
@@ -194,38 +193,38 @@ impl<'a> PC<'a> {
             match loc.face {
                 Face::One => {
                     (
-                        Loc { face: Face::Three, row: 0, col: loc.row},
-                        Dir::Down,
+                        Loc { face: Face::Four, row: n - 1 - loc.row, col: 0},
+                        Dir::Right,
                     )
                 },
                 Face::Two => {
                     (
-                        Loc { face: Face::Six, row: n - 1, col: n - 1 - loc.row },
-                        Dir::Up,
+                        Loc { face: Face::One, row: loc.row, col: n - 1 },
+                        Dir::Left,
                     )
                 },
                 Face::Three => {
                     (
-                        Loc { face: Face::Two, row: loc.row, col: n - 1 },
-                        Dir::Left,
+                        Loc { face: Face::Four, row: 0, col: loc.row },
+                        Dir::Down,
                     )
                 },
                 Face::Four => {
                     (
-                        Loc { face: Face::Three, row: loc.row, col: n - 1 },
-                        Dir::Left,
+                        Loc { face: Face::One, row: n - 1 - loc.row, col: 0 },
+                        Dir::Right,
                     )
                 },
                 Face::Five => {
                     (
-                        Loc { face: Face::Three, row: n - 1, col: n - 1 - loc.row },
-                        Dir::Up,
+                        Loc { face: Face::Four, row: loc.row, col: n - 1 },
+                        Dir::Left,
                     )
                 },
                 Face::Six => {
                     (
-                        Loc { face: Face::Five, row: loc.row, col: n - 1 },
-                        Dir::Left,
+                        Loc { face: Face::One, row: 0, col: loc.row },
+                        Dir::Down,
                     )
                 },
             }
@@ -234,38 +233,38 @@ impl<'a> PC<'a> {
             match loc.face {
                 Face::One => {
                     (
-                        Loc { face: Face::Two, row: 0, col: loc.col},
-                        Dir::Down,
+                        Loc { face: Face::Six, row: loc.col, col: 0},
+                        Dir::Right,
                     )
                 },
                 Face::Two => {
                     (
-                        Loc { face: Face::One, row: 0, col: n - 1 - loc.col },
-                        Dir::Down,
+                        Loc { face: Face::Six, row: n - 1, col: loc.col },
+                        Dir::Up,
                     )
                 },
                 Face::Three => {
-                    (
-                        Loc { face: Face::One, row: loc.col, col: 0 },
-                        Dir::Right,
-                    )
-                },
-                Face::Four => {
                     (
                         Loc { face: Face::One, row: n - 1, col: loc.col },
                         Dir::Up,
                     )
                 },
+                Face::Four => {
+                    (
+                        Loc { face: Face::Three, row: loc.col, col: 0 },
+                        Dir::Right,
+                    )
+                },
                 Face::Five => {
                     (
-                        Loc { face: Face::Four, row: n - 1, col: loc.col },
+                        Loc { face: Face::Three, row: n - 1, col: loc.col },
                         Dir::Up,
                     )
                 },
                 Face::Six => {
                     (
-                        Loc { face: Face::Four, row: n - 1 - loc.col, col: n - 1 },
-                        Dir::Left,
+                        Loc { face: Face::Four, row: n - 1, col: loc.col },
+                        Dir::Up,
                     )
                 },
             }
@@ -274,38 +273,38 @@ impl<'a> PC<'a> {
             match loc.face {
                 Face::One => {
                     (
-                        Loc { face: Face::Four, row: 0, col: loc.col},
+                        Loc { face: Face::Three, row: 0, col: loc.col},
                         Dir::Down,
                     )
                 },
                 Face::Two => {
                     (
-                        Loc { face: Face::Five, row: n - 1, col: n - 1 - loc.col },
-                        Dir::Up,
+                        Loc { face: Face::Three, row: loc.col, col: n - 1 },
+                        Dir::Left,
                     )
                 },
                 Face::Three => {
-                    (
-                        Loc { face: Face::Five, row: n - 1 - loc.col, col: 0 },
-                        Dir::Right,
-                    )
-                },
-                Face::Four => {
                     (
                         Loc { face: Face::Five, row: 0, col: loc.col },
                         Dir::Down,
                     )
                 },
+                Face::Four => {
+                    (
+                        Loc { face: Face::Six, row: 0, col: loc.col },
+                        Dir::Down,
+                    )
+                },
                 Face::Five => {
                     (
-                        Loc { face: Face::Two, row: n - 1, col: n - 1 - loc.col },
-                        Dir::Up,
+                        Loc { face: Face::Six, row: loc.col, col: n - 1 },
+                        Dir::Left,
                     )
                 },
                 Face::Six => {
                     (
-                        Loc { face: Face::Two, row: n - 1 - loc.col, col: 0 },
-                        Dir::Right,
+                        Loc { face: Face::Two, row: 0, col: loc.col },
+                        Dir::Down,
                     )
                 },
             }
@@ -355,7 +354,7 @@ fn part_2(map: Map, instructions: Vec<String>) -> isize {
         map: &map,
     };
 
-    for i in instructions.iter().take(13) {
+    for i in instructions.iter() {
         if i == "R" {
             pc.turn_right();
         } else if i == "L" {
@@ -370,8 +369,8 @@ fn part_2(map: Map, instructions: Vec<String>) -> isize {
 }
 
 fn main() {
-    let (map, instructions) = parse(include_str!("test.input.txt"), 4);
-    assert_eq!(part_2(map, instructions), 5031);
+    // let (map, instructions) = parse(include_str!("test.input.txt"), 4);
+    // assert_eq!(part_2(map, instructions), 5031);
 
     let (map, instructions) = parse(include_str!("input.txt"), 50);
     println!("Part 2: {}", part_2(map, instructions));
